@@ -1,0 +1,26 @@
+input[type="file"] {
+  display: none;
+}
+
+.single-file-uploader {
+  display: flex;
+  align-items: center;
+
+  .file-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-right: 15px;
+
+    .filename {
+      margin-bottom: 5px;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .error {
+      color: var(--app-color-warn);
+      margin-bottom: 5px;
+    }
+  }
+}

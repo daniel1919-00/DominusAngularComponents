@@ -1,0 +1,20 @@
+<ng-container *ngIf="multiple; else singleFileUploader">
+  <div class="multiple-file-uploader">
+
+  </div>
+</ng-container>
+
+<ng-template #singleFileUploader>
+  <div class="single-file-uploader">
+    <div class="file-info">
+      <span class="filename">{{hasFiles ? _value[0].name : (_filesQueue[_lastFileId] ? _filesQueue[_lastFileId].name : 'No file')}}</span>
+      <span *ngIf="_filesQueue[_lastFileId]" class="error">{{ _filesQueue[_lastFileId].error }}</span>
+      <mat-progress-bar class="progress" *ngIf="_filesQueue[_lastFileId] && (_filesQueue[_lastFileId].progress < 100) && _filesQueue[_lastFileId].error === ''" [value]="_filesQueue[_lastFileId].progress"></mat-progress-bar>
+    </div>
+    <button mat-mini-fab [color]="hasFiles ? 'warn' : 'primary'" [ngClass]="{'upload-btn': !hasFiles, 'delete-btn': hasFiles}" (click)="hasFiles ? removeFile(0) : fileInput.click()">
+      <mat-icon>{{!hasFiles ? 'attach_file' : 'delete'}}</mat-icon>
+    </button>
+  </div>
+</ng-template>
+
+<input type="file" [multiple]="multiple" (change)="onFiles($event)" #fileInput>

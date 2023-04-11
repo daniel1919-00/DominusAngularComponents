@@ -1,0 +1,33 @@
+.item {
+  display: flex;
+  align-items: center;
+  padding: var(--app-sidenav-menu-item-padding);
+  user-select: none;
+  cursor: pointer;
+
+  .item-info {
+    display: flex;
+    justify-content: space-between;
+
+    .title {
+      display: flex;
+      align-items: center;
+
+      >span.icon {
+        padding-right: 7px;
+      }
+    }
+  }
+
+  &.active, &:hover {
+    background-color: var(--app-sidenav-menu-active-hover-background);
+
+    .item-info {
+      .title {
+        span {
+          color: var(--app-sidenav-menu-active-hover-color);
+        }
+      }
+    }
+  }
+}
