@@ -10,19 +10,19 @@ import {SidenavMenuItemComponent} from "./components/sidenav-menu-item/sidenav-m
 import {MatToolbarModule} from "@angular/material/toolbar";
 
 @NgModule({
-  declarations: [
-    AppComponent,
-  ],
-  imports: [
-    BrowserModule,
-    RouterModule.forRoot(dominusRoutes),
-    BrowserAnimationsModule,
-    MatSidenavModule,
-    SidenavMenuItemComponent,
-    SidenavMenuItemComponent,
-    MatToolbarModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
+    declarations: [
+        AppComponent,
+    ],
+    imports: [
+        BrowserModule,
+        RouterModule.forRoot(dominusRoutes),
+        BrowserAnimationsModule,
+        MatSidenavModule,
+        SidenavMenuItemComponent,
+        SidenavMenuItemComponent,
+        MatToolbarModule
+    ],
+    providers: [],
+    bootstrap: [AppComponent]
 })
 export class AppModule { }
