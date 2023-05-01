@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {DominusUploaderComponent} from "../../dominus/dominus-uploader/dominus-uploader.component";
 import {MatCardModule} from "@angular/material/card";
 import {DOMINUS_UPLOADER_INTL, DominusUploaderIntl} from "../../dominus/dominus-uploader/dominus-uploader";
@@ -19,5 +19,4 @@ import {DOMINUS_UPLOADER_INTL, DominusUploaderIntl} from "../../dominus/dominus-
     }]
 })
 export class UploaderDemoComponent {
-
 }
