@@ -3,6 +3,8 @@ import {InjectionToken} from "@angular/core";
 export interface DominusFile {
   name: string;
   size: number;
+  type: string;
+  isImage: boolean;
   data: {[key: string]: any};
 }
 
