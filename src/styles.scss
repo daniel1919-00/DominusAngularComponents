@@ -23,7 +23,19 @@ $warn-palette: mat.define-palette(mat.$red-palette);
     --app-sidenav-menu-active-hover-background: #{mat.get-color-from-palette($primary-palette)};
     --app-sidenav-menu-active-hover-color: #{mat.get-color-from-palette($primary-palette, 'default-contrast')};
     --app-header-height: 50px;
-    --app-color-warn: #{mat.get-color-from-palette($warn-palette)}
+    --app-color-warn: #{mat.get-color-from-palette($warn-palette)};
+    --app-color-primary: #{mat.get-color-from-palette($primary-palette)};
 }
 
-body { margin: 0; height: calc(100vh - var(--app-header-height)); font-family: Roboto, "Helvetica Neue", sans-serif; }
+body {
+    margin: 0;
+    width: 100%;
+    height: calc(100vh - var(--app-header-height));
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.app-content {
+    margin-top: 10px;
+    display: flex !important;
+    justify-content: center;
+}

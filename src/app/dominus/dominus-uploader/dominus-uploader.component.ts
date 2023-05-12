@@ -1,12 +1,24 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, Input, OnInit, Optional} from '@angular/core';
+import {
+    AfterViewInit,
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component, ElementRef, EventEmitter, HostBinding,
+    Inject,
+    Input, OnDestroy,
+    OnInit,
+    Optional, Output, Self, ViewChild,
+} from '@angular/core';
 import {MatButtonModule} from "@angular/material/button";
 import {DOMINUS_UPLOADER_INTL, DominusFile, DominusQueuedFile, DominusUploaderIntl} from "./dominus-uploader";
 import {MatIconModule} from "@angular/material/icon";
 import {CommonModule} from "@angular/common";
 import {HttpClient, HttpClientModule, HttpEventType} from "@angular/common/http";
-import {catchError, of} from "rxjs";
+import {catchError, fromEvent, of, Subject, takeUntil} from "rxjs";
 import {MatProgressBarModule} from "@angular/material/progress-bar";
-import {ControlValueAccessor} from "@angular/forms";
+import {ControlValueAccessor, NgControl} from "@angular/forms";
+import {DominusUploaderFileComponent} from "./components/dominus-uploader-file/dominus-uploader-file.component";
+import {coerceBooleanProperty} from "@angular/cdk/coercion";
+import {MAT_FORM_FIELD, MatFormField, MatFormFieldControl} from "@angular/material/form-field";
 
 @Component({
     standalone: true,
@@ -17,12 +29,24 @@ import {ControlValueAccessor} from "@angular/forms";
         MatIconModule,
         CommonModule,
         HttpClientModule,
-        MatProgressBarModule
+        MatProgressBarModule,
+        DominusUploaderFileComponent
     ],
     styleUrls: ['./dominus-uploader.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [
+        {
+            provide: MatFormFieldControl,
+            useExisting: DominusUploaderComponent
+        }
+    ]
 })
-export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
+export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewInit, ControlValueAccessor, MatFormFieldControl<DominusFile[]> {
+    static nextId = 0;
+
+    @ViewChild('uploaderContainer') uploaderContainer!: ElementRef;
+    @ViewChild('fileInput') fileInput!: ElementRef;
+
     /**
      * Endpoint that handles storing the file
      */
@@ -42,6 +66,7 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
 
     /**
      * A list of allowed file extensions(lowercase), if empty the extension check is skipped.
+     * Example: ['txt', 'xlsx', ...]
      */
     @Input() allowedExtensions: string[] = [];
 
@@ -51,28 +76,69 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
     @Input() maxFileSize = 5 * 1024 * 1024;
 
     /**
-     * A small image preview is rendered next tot the file name if an image is detected
+     * Whether to show a preview if the uploaded file is an image
      */
     @Input() showImagePreview = true;
 
-    _value: DominusFile[] = [];
+    /**
+     * [ngStyle] compatible object
+     */
+    @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '100px'};
+    /**
+     * Event triggered when all the files in the upload queue are uploaded
+     * This event is disabled when using angular reactive forms!
+     */
+    @Output() uploadFinished = new EventEmitter<DominusFile[]>();
+
+    @HostBinding() id = `dominus-uploader-${DominusUploaderComponent.nextId++}`;
+
+    stateChanges = new Subject<void>();
     hasFiles = false;
-
+    focused = false;
+    controlType = 'dominus-uploader';
+    _containerClasses: {[klass: string]: boolean} = {
+        'container': true,
+        'multiple': false,
+        'mat-form-field': false,
+        'dragover': false
+    };
+    _value: DominusFile[] = [];
     _lastFileId = 0;
-    _filesQueue: { [key: number]: DominusQueuedFile } = {};
+    _filesQueue  = new Map<number, DominusQueuedFile>();
+    _disabled: boolean = false;
+    _required: boolean = false;
 
-    private _onChange = () => {};
-    private _onTouched = () => {};
+
+    protected _onChange = (files: DominusFile[]) => files;
+    protected _onTouched = () => {};
+    protected isInAngularForm = false;
+    protected readonly DominusUploaderIntl = DominusUploaderIntl;
+    protected readonly componentDestroyed$ = new Subject<void>();
+
+    private _placeholder: string = '';
 
     constructor(
-        private readonly http: HttpClient,
-        private readonly changeDetector: ChangeDetectorRef,
-        @Optional() @Inject(DOMINUS_UPLOADER_INTL) private readonly intl: Record<DominusUploaderIntl, string>
+        protected readonly http: HttpClient,
+        protected readonly changeDetector: ChangeDetectorRef,
+        private _elementRef: ElementRef<HTMLElement>,
+        @Optional() @Inject(DOMINUS_UPLOADER_INTL) public readonly intl: Record<DominusUploaderIntl, string>,
+        @Optional() @Inject(MAT_FORM_FIELD) public matFormField: MatFormField,
+        @Optional() @Self() public ngControl: NgControl,
     ) {
+        if (this.ngControl != null) {
+            this.ngControl.valueAccessor = this;
+        }
+
+        this._containerClasses['mat-form-field'] = !!this.matFormField;
+
         const defaultIntl: Record<DominusUploaderIntl, string> = {
             [DominusUploaderIntl.UNKNOWN_ERROR]: 'Upload Failed!',
             [DominusUploaderIntl.INVALID_EXTENSION]: 'Invalid file extension!',
-            [DominusUploaderIntl.MAX_SIZE_EXCEEDED]: 'File size is too big!'
+            [DominusUploaderIntl.MAX_SIZE_EXCEEDED]: 'File size is too big!',
+            [DominusUploaderIntl.MULTIPLE_NO_FILES_MESSAGE]: 'Drop files here!',
+            [DominusUploaderIntl.SINGLE_NO_FILES_MESSAGE]: 'No file',
+            [DominusUploaderIntl.ALLOWED_EXTENSIONS]: 'Allowed Extensions',
+            [DominusUploaderIntl.MULTIPLE_ADD_FILES_BTN]: 'Add files',
         };
 
         if (intl) {
@@ -86,8 +152,17 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
 
     ngOnInit() {
         if (!this.fileSaveEndpoint) {
-            throw new Error('Dominus uploader: Please set the [fileSaveEndpoint] @Input()!')
+            throw new Error('Dominus uploader: Please set the [fileSaveEndpoint] @Input()!');
         }
+
+        this._containerClasses['multiple'] = this.multiple;
+    }
+
+    ngAfterViewInit() {
+        const uploaderContainer = this.matFormField?._elementRef.nativeElement || this.uploaderContainer.nativeElement;
+        fromEvent<DragEvent>(uploaderContainer, 'dragover').pipe(takeUntil(this.componentDestroyed$)).subscribe((evt) => this.onDragOver(evt));
+        fromEvent<DragEvent>(uploaderContainer, 'dragleave').pipe(takeUntil(this.componentDestroyed$)).subscribe((evt) => this.onDragLeave(evt));
+        fromEvent<DragEvent>(uploaderContainer, 'drop').pipe(takeUntil(this.componentDestroyed$)).subscribe((evt) => this.onFilesDropped(evt));
     }
 
     get value(): DominusFile[] {
@@ -95,7 +170,7 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
     }
 
     @Input()
-    set value(value: DominusFile[]) {
+     set value(value: DominusFile[]) {
         value = value || [];
 
         if (!Array.isArray(value)) {
@@ -104,87 +179,203 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
 
         this._value = value;
         this.hasFiles = this._value.length > 0;
+        this.stateChanges.next();
     }
 
-    onFiles(event: Event) {
-        const fileInput = event.target as HTMLInputElement;
+    onFiles(addedFiles: FileList) {
+        if (!(addedFiles && addedFiles.length)) {
+            return;
+        }
 
-        if (fileInput && fileInput.files?.length) {
-            const files = this.multiple ? fileInput.files : [fileInput.files[0]];
+        const files = this.multiple ? addedFiles : [addedFiles[0]];
 
-            for (let i = files.length; i--;) {
-                const file: File = files[i];
-                const error = this.checkFile(file);
+        for (let i = files.length; i--;) {
+            const file: File = files[i];
+            const error = this.checkFile(file);
 
-                const queuedDominusFile: DominusQueuedFile = {
-                    id: ++this._lastFileId,
-                    name: file.name,
-                    progress: 0,
-                    size: file.size,
-                    error: error
-                };
+            const queuedDominusFile: DominusQueuedFile = {
+                id: ++this._lastFileId,
+                name: file.name,
+                progress: 0,
+                size: file.size,
+                error: error,
+                canRetryUpload: error === '',
+                file: file
+            };
 
-                this._filesQueue[queuedDominusFile.id] = queuedDominusFile;
+            this._filesQueue.set(queuedDominusFile.id, queuedDominusFile);
 
-                if (error !== '') {
-                    continue;
-                }
-
-                const formData = new FormData();
-                formData.append("file", file);
-
-                this.http.request(this.fileSaveEndpointRequestMethod, this.fileSaveEndpoint, {
-                    reportProgress: true,
-                    observe: 'events',
-                    body: formData
-                }).pipe(
-                    catchError(() => {
-                        queuedDominusFile.error = this.intl[DominusUploaderIntl.UNKNOWN_ERROR];
-                        queuedDominusFile.progress = 0;
-                        this.changeDetector.markForCheck();
-                        return of(null);
-                    }),
-                ).subscribe(event => {
-                    if (event) {
-                        switch (event.type) {
-                            case HttpEventType.UploadProgress:
-                                queuedDominusFile.progress = Math.floor(event.loaded / (event.total || 1) * 100);
-                                this.changeDetector.markForCheck();
-                                break;
-
-                            case HttpEventType.Response:
-                                this._value.push({
-                                    name: file.name,
-                                    size: file.size,
-                                    type: file.type,
-                                    isImage: file.type.includes('image'),
-                                    data: event.body || {}
-                                });
-
-                                delete this._filesQueue[queuedDominusFile.id];
-                                this.hasFiles = true;
-                                this.changeDetector.markForCheck();
-                                break;
-                        }
-                    }
-                });
+            if (error === '') {
+                this._uploadFile(queuedDominusFile);
             }
         }
+
+        this.fileInput.nativeElement.value = '';
+    }
+
+    _uploadFile(queuedDominusFile: DominusQueuedFile) {
+        const formData = new FormData();
+        const file = queuedDominusFile.file;
+
+        formData.append("file", file);
+
+        this.http.request(this.fileSaveEndpointRequestMethod, this.fileSaveEndpoint, {
+            reportProgress: true,
+            observe: 'events',
+            body: formData
+        }).pipe(
+            catchError(() => {
+                queuedDominusFile.error = this.intl[DominusUploaderIntl.UNKNOWN_ERROR];
+                queuedDominusFile.progress = 0;
+                this.changeDetector.markForCheck();
+                return of(null);
+            }),
+        ).subscribe(event => {
+            if (event) {
+                switch (event.type) {
+                    case HttpEventType.UploadProgress:
+                        queuedDominusFile.progress = Math.floor(event.loaded / (event.total || 1) * 100);
+                        this.changeDetector.markForCheck();
+                        break;
+
+                    case HttpEventType.Response:
+                        this._value.push({
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            imagePreviewUrl: file.type.includes('image') ? URL.createObjectURL(file) : '',
+                            data: event.body || {}
+                        });
+
+                        this._onChange(this.value);
+                        this._filesQueue.delete(queuedDominusFile.id);
+                        this.hasFiles = true;
+                        this.changeDetector.markForCheck();
+                        if(this.isInAngularForm && !this._filesQueue.size)
+                        {
+                            this.uploadFinished.next(this.value);
+                        }
+                        break;
+                }
+            }
+        });
+    }
+
+    _retryUpload(fileId: number) {
+        const queuedFile = this._filesQueue.get(fileId);
+
+        if(!queuedFile) {
+            return;
+        }
+
+        if(!queuedFile.canRetryUpload) {
+            this._filesQueue.delete(fileId);
+            return;
+        }
+
+        this._uploadFile(queuedFile);
     }
 
     removeFile(fileIndex: number) {
         const file = this._value.splice(fileIndex, 1)[0];
 
-        if(this.fileDeleteEndpoint)
-        {
-            this.http.request(this.fileSaveEndpointRequestMethod, this.fileDeleteEndpoint, {body: [file]}).subscribe(() =>
-            {
+        if(this.fileDeleteEndpoint) {
+            this.http.request(this.fileSaveEndpointRequestMethod, this.fileDeleteEndpoint, {body: [file]}).subscribe(() => {
 
             });
         }
 
         this.hasFiles = this._value.length > 0;
         this.changeDetector.markForCheck();
+    }
+
+    get errorState(): boolean {
+        return (this.ngControl && this.ngControl.invalid && this.ngControl.touched) as boolean;
+    }
+
+    setDescribedByIds(ids: string[]) {
+    }
+
+    onContainerClick(event: MouseEvent) {
+        this._onTouched();
+    }
+
+    @HostBinding('class.floating')
+    get shouldLabelFloat() {
+        return true;
+    }
+
+    get empty() {
+        return this.value.length === 0;
+    }
+
+    get placeholder() {
+        return this._placeholder;
+    }
+
+    @Input()
+    set placeholder(plh) {
+        this._placeholder = plh;
+        this.stateChanges.next();
+    }
+
+    @Input()
+    set disabled(state: boolean) {
+        this._disabled = coerceBooleanProperty(state);
+        this.stateChanges.next();
+    }
+
+    get disabled() {
+        return this._disabled;
+    }
+
+    @Input()
+    set required(state: boolean) {
+        this._required = coerceBooleanProperty(state);
+        this.stateChanges.next();
+    }
+
+    get required() {
+        return this._required;
+    }
+
+    registerOnChange(fn: any): void {
+        this._onChange = fn;
+        this.isInAngularForm = true;
+    }
+
+    registerOnTouched(fn: any): void {
+        this._onTouched = fn;
+    }
+
+    writeValue(val: DominusFile[]): void {
+        this.value = val;
+    }
+
+    private onDragOver(evt: DragEvent) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this._containerClasses['dragover'] = true;
+        this.changeDetector.markForCheck();
+    }
+
+    private onDragLeave(evt: DragEvent) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        this._containerClasses['dragover'] = false;
+        this.changeDetector.markForCheck();
+    }
+
+    private onFilesDropped(evt: DragEvent) {
+        const files = evt.dataTransfer?.files;
+        if(files)
+        {
+            evt.preventDefault();
+            evt.stopPropagation();
+            this._containerClasses['dragover'] = false;
+            this.changeDetector.markForCheck();
+            this.onFiles(files);
+        }
     }
 
     private checkFile(file: File): string {
@@ -213,15 +404,9 @@ export class DominusUploaderComponent implements OnInit, ControlValueAccessor {
         return '';
     }
 
-    registerOnChange(fn: any): void {
-        this._onChange = fn;
-    }
-
-    registerOnTouched(fn: any): void {
-        this._onTouched = fn;
-    }
-
-    writeValue(val: DominusFile[]): void {
-        this.value = val;
+    ngOnDestroy(){
+        this.componentDestroyed$.next();
+        this.componentDestroyed$.complete();
+        this.stateChanges.complete();
     }
 }

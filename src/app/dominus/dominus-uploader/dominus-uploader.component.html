@@ -1,29 +1,64 @@
-<ng-container *ngIf="multiple; else singleFileUploader">
-    <div class="multiple-file-uploader">
-
-    </div>
-</ng-container>
-
-<ng-template #singleFileUploader>
-    <div class="single-file-uploader">
-<!--        <div class="file-preview">-->
-<!--            <img *ngIf="hasFiles && _value[0].isImage" [src]="" alt="Preview">-->
-<!--        </div>-->
-        <div class="file-info">
-            <span class="filename">{{hasFiles ? _value[0].name : (_filesQueue[_lastFileId] ? _filesQueue[_lastFileId].name : 'No file')}}</span>
-            <span *ngIf="_filesQueue[_lastFileId]" class="error">{{ _filesQueue[_lastFileId].error }}</span>
-            <mat-progress-bar *ngIf="_filesQueue[_lastFileId] && _filesQueue[_lastFileId].error === ''"
-                              class="progress"
-                              [value]="_filesQueue[_lastFileId].progress"></mat-progress-bar>
+<div #uploaderContainer [ngClass]="_containerClasses">
+    <ng-container *ngIf="multiple; else singleFileUploader">
+        <div class="actions">
+            <button type="button" mat-raised-button color="primary" (click)="fileInput.click()">
+                <mat-icon>add</mat-icon>
+                {{ intl[DominusUploaderIntl.MULTIPLE_ADD_FILES_BTN] }}
+            </button>
         </div>
-        <button mat-mini-fab
-                [color]="hasFiles ? 'warn' : 'primary'"
-                [ngClass]="{'upload-btn': !hasFiles, 'delete-btn': hasFiles}"
-                (click)="hasFiles ? removeFile(0) : fileInput.click()">
+        <ng-container *ngIf="hasFiles || _filesQueue.has(_lastFileId); else noFilesMultiple">
+            <app-dominus-uploader-file
+                *ngFor="let file of _value; let i = index"
+                [fileIndex]="i"
+                [imagePreviewStyles]="imagePreviewStyles"
+                [file]="file"
+                (fileDelete)="removeFile($event)"
+            ></app-dominus-uploader-file>
 
-            <mat-icon>{{!hasFiles ? 'attach_file' : 'delete'}}</mat-icon>
-        </button>
-    </div>
-</ng-template>
+            <app-dominus-uploader-file
+                *ngFor="let queuedFile of _filesQueue.entries()"
+                [fileIndex]="queuedFile[0]"
+                [error]="queuedFile[1].error"
+                [uploadProgress]="queuedFile[1].progress"
+                [file]="queuedFile[1]"
+                (fileRetry)="_retryUpload($event)"
+            ></app-dominus-uploader-file>
+        </ng-container>
+        <ng-template #noFilesMultiple>
+            <div class="no-files-multiple">
+                <h3>{{ intl[DominusUploaderIntl.MULTIPLE_NO_FILES_MESSAGE] }}</h3>
+                <span *ngIf="allowedExtensions.length" class="allowed-extensions">
+                    <span>{{intl[DominusUploaderIntl.ALLOWED_EXTENSIONS]}}:</span> {{ allowedExtensions.join(', ') }}
+                </span>
+            </div>
+        </ng-template>
+    </ng-container>
 
-<input type="file" [multiple]="multiple" (change)="onFiles($event)" #fileInput>
+    <ng-template #singleFileUploader>
+        <app-dominus-uploader-file
+            *ngIf="hasFiles || _filesQueue.has(_lastFileId); else noFilesSingle"
+            [fileIndex]="0"
+            [imagePreviewStyles]="imagePreviewStyles"
+            [error]="_filesQueue.get(_lastFileId)?.error"
+            [uploadProgress]="_filesQueue.get(_lastFileId)?.progress"
+            [file]="hasFiles ? _value[0] : $any(_filesQueue.get(_lastFileId))"
+            (fileDelete)="removeFile($event)"
+            (fileRetry)="_retryUpload($event)"
+        ></app-dominus-uploader-file>
+
+        <ng-template #noFilesSingle>
+            <div class="no-files-single">
+                <span>{{ intl[DominusUploaderIntl.SINGLE_NO_FILES_MESSAGE] }}</span>
+                <button mat-mini-fab
+                        type="button"
+                        color="primary"
+                        class="upload-btn"
+                        (click)="fileInput.click()">
+
+                    <mat-icon>attach_file</mat-icon>
+                </button>
+            </div>
+        </ng-template>
+    </ng-template>
+</div>
+<input #fileInput type="file" [accept]="allowedExtensions.length ? '.' + allowedExtensions.join(',.') : null" [multiple]="multiple" (change)="onFiles($any($event.target).files)">

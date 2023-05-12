@@ -1,0 +1,25 @@
+<div class="file">
+    <div class="preview">
+        <img *ngIf="file.imagePreviewUrl" [ngStyle]="imagePreviewStyles" [src]="file.imagePreviewUrl" alt="Preview">
+    </div>
+    <div class="info">
+        <span class="filename">{{ file.name }}</span>
+        <span *ngIf="error" class="error">{{ error }}</span>
+        <mat-progress-bar *ngIf="uploadProgress && error === ''"
+                          class="progress"
+                          [value]="uploadProgress"></mat-progress-bar>
+    </div>
+    <div class="actions">
+        <button *ngIf="$any(file).progress === undefined" mat-mini-fab
+                color="warn"
+                (click)="fileDelete.next(fileIndex)">
+            <mat-icon>delete</mat-icon>
+        </button>
+
+        <button *ngIf="$any(file).id && error !== ''" mat-mini-fab
+                color="primary"
+                (click)="fileRetry.next($any(file).id)">
+            <mat-icon>refresh</mat-icon>
+        </button>
+    </div>
+</div>
