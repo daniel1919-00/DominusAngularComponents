@@ -85,8 +85,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      */
     @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '100px'};
     /**
-     * Event triggered when all the files in the upload queue are uploaded
-     * This event is disabled when using angular reactive forms!
+     * Event triggered when all the files in the upload queue are uploaded.
      */
     @Output() uploadFinished = new EventEmitter<DominusFile[]>();
 
@@ -165,6 +164,13 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         fromEvent<DragEvent>(uploaderContainer, 'drop').pipe(takeUntil(this.componentDestroyed$)).subscribe((evt) => this.onFilesDropped(evt));
     }
 
+    /**
+     * Opens the file input dialog.
+     */
+    openFilesInput() {
+        this.fileInput.nativeElement.click()
+    }
+
     get value(): DominusFile[] {
         return this._value;
     }
@@ -182,7 +188,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this.stateChanges.next();
     }
 
-    onFiles(addedFiles: FileList) {
+    _onFiles(addedFiles: FileList) {
         if (!(addedFiles && addedFiles.length)) {
             return;
         }
@@ -251,10 +257,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
                         this._filesQueue.delete(queuedDominusFile.id);
                         this.hasFiles = true;
                         this.changeDetector.markForCheck();
-                        if(this.isInAngularForm && !this._filesQueue.size)
-                        {
-                            this.uploadFinished.next(this.value);
-                        }
+                        this.uploadFinished.next(this.value);
                         break;
                 }
             }
@@ -276,6 +279,10 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this._uploadFile(queuedFile);
     }
 
+    /**
+     * Removes an uploaded file by index
+     * @param fileIndex
+     */
     removeFile(fileIndex: number) {
         const file = this._value.splice(fileIndex, 1)[0];
 
@@ -374,7 +381,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
             evt.stopPropagation();
             this._containerClasses['dragover'] = false;
             this.changeDetector.markForCheck();
-            this.onFiles(files);
+            this._onFiles(files);
         }
     }
 

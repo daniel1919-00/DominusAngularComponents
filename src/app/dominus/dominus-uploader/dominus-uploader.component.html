@@ -1,7 +1,7 @@
 <div #uploaderContainer [ngClass]="_containerClasses">
     <ng-container *ngIf="multiple; else singleFileUploader">
         <div class="actions">
-            <button type="button" mat-raised-button color="primary" (click)="fileInput.click()">
+            <button type="button" mat-raised-button color="primary" (click)="openFilesInput()">
                 <mat-icon>add</mat-icon>
                 {{ intl[DominusUploaderIntl.MULTIPLE_ADD_FILES_BTN] }}
             </button>
@@ -53,7 +53,7 @@
                         type="button"
                         color="primary"
                         class="upload-btn"
-                        (click)="fileInput.click()">
+                        (click)="openFilesInput()">
 
                     <mat-icon>attach_file</mat-icon>
                 </button>
@@ -61,4 +61,4 @@
         </ng-template>
     </ng-template>
 </div>
-<input #fileInput type="file" [accept]="allowedExtensions.length ? '.' + allowedExtensions.join(',.') : null" [multiple]="multiple" (change)="onFiles($any($event.target).files)">
+<input #fileInput type="file" [accept]="allowedExtensions.length ? '.' + allowedExtensions.join(',.') : null" [multiple]="multiple" (change)="_onFiles($any($event.target).files)">
