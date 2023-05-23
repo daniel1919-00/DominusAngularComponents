@@ -52,14 +52,14 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      */
     @Input() fileSaveEndpoint!: string;
     @Input() fileSaveEndpointRequestMethod = 'POST';
-    @Input() fileSaveEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]};
+    @Input() fileSaveEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]} | Promise<HttpHeaders | {[p: string]: string | string[]}>;
 
     /**
      * Endpoint to be called when deleting a file or clearing all uploaded files if [multiple] = true
      */
     @Input() fileDeleteEndpoint?: string;
     @Input() fileDeleteEndpointRequestMethod = 'DELETE';
-    @Input() fileDeleteEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]};
+    @Input() fileDeleteEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]} | Promise<HttpHeaders | {[p: string]: string | string[]}>;
 
     /**
      * Allow multiple files?
@@ -222,17 +222,19 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this.fileInput.nativeElement.value = '';
     }
 
-    _uploadFile(queuedDominusFile: DominusQueuedFile) {
+    async _uploadFile(queuedDominusFile: DominusQueuedFile) {
         const formData = new FormData();
         const file = queuedDominusFile.file;
 
         formData.append("file", file);
 
+        const requestHeaders = this.fileSaveEndpointRequestHeaders instanceof Promise ? await this.fileSaveEndpointRequestHeaders : this.fileSaveEndpointRequestHeaders;
+
         this.http.request(this.fileSaveEndpointRequestMethod, this.fileSaveEndpoint, {
             reportProgress: true,
             observe: 'events',
             body: formData,
-            headers: this.fileSaveEndpointRequestHeaders
+            headers: requestHeaders
         }).pipe(
             catchError(() => {
                 queuedDominusFile.error = this.intl[DominusUploaderIntl.UNKNOWN_ERROR];
@@ -287,8 +289,10 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      * Removes an uploaded file by index
      * @param fileIndex
      */
-    removeFile(fileIndex: number) {
+    async removeFile(fileIndex: number) {
         const file = this._value.splice(fileIndex, 1)[0];
+
+        const requestHeaders = this.fileDeleteEndpointRequestHeaders instanceof Promise ? await this.fileDeleteEndpointRequestHeaders : this.fileDeleteEndpointRequestHeaders;
 
         if(this.fileDeleteEndpoint) {
             this.http.request(
@@ -296,7 +300,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
                 this.fileDeleteEndpoint,
                 {
                     body: [file],
-                    headers: this.fileDeleteEndpointRequestHeaders
+                    headers: requestHeaders
                 }).subscribe(() => {
 
             });
