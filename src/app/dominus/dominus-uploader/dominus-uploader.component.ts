@@ -12,7 +12,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {DOMINUS_UPLOADER_INTL, DominusFile, DominusQueuedFile, DominusUploaderIntl} from "./dominus-uploader";
 import {MatIconModule} from "@angular/material/icon";
 import {CommonModule} from "@angular/common";
-import {HttpClient, HttpClientModule, HttpEventType} from "@angular/common/http";
+import {HttpClient, HttpClientModule, HttpEventType, HttpHeaders} from "@angular/common/http";
 import {catchError, fromEvent, of, Subject, takeUntil} from "rxjs";
 import {MatProgressBarModule} from "@angular/material/progress-bar";
 import {ControlValueAccessor, NgControl} from "@angular/forms";
@@ -52,12 +52,14 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      */
     @Input() fileSaveEndpoint!: string;
     @Input() fileSaveEndpointRequestMethod = 'POST';
+    @Input() fileSaveEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]};
 
     /**
      * Endpoint to be called when deleting a file or clearing all uploaded files if [multiple] = true
      */
     @Input() fileDeleteEndpoint?: string;
     @Input() fileDeleteEndpointRequestMethod = 'DELETE';
+    @Input() fileDeleteEndpointRequestHeaders?: HttpHeaders | {[p: string]: string | string[]};
 
     /**
      * Allow multiple files?
@@ -84,6 +86,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      * [ngStyle] compatible object
      */
     @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '100px'};
+
     /**
      * Event triggered when all the files in the upload queue are uploaded.
      */
@@ -228,7 +231,8 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this.http.request(this.fileSaveEndpointRequestMethod, this.fileSaveEndpoint, {
             reportProgress: true,
             observe: 'events',
-            body: formData
+            body: formData,
+            headers: this.fileSaveEndpointRequestHeaders
         }).pipe(
             catchError(() => {
                 queuedDominusFile.error = this.intl[DominusUploaderIntl.UNKNOWN_ERROR];
@@ -287,7 +291,13 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         const file = this._value.splice(fileIndex, 1)[0];
 
         if(this.fileDeleteEndpoint) {
-            this.http.request(this.fileSaveEndpointRequestMethod, this.fileDeleteEndpoint, {body: [file]}).subscribe(() => {
+            this.http.request(
+                this.fileDeleteEndpointRequestMethod,
+                this.fileDeleteEndpoint,
+                {
+                    body: [file],
+                    headers: this.fileDeleteEndpointRequestHeaders
+                }).subscribe(() => {
 
             });
         }
