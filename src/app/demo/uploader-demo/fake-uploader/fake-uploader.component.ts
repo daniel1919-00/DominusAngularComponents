@@ -40,6 +40,10 @@ export class FakeUploaderComponent extends DominusUploaderComponent {
         let loaded = 0;
 
         interval(1000).pipe(takeUntil(this.componentDestroyed$), take(duration), finalize(() => {
+            if(!this.multiple)
+            {
+                this._value = [];
+            }
             this._value.push({
                 name: queuedDominusFile.file.name,
                 size: queuedDominusFile.file.size,
@@ -61,11 +65,15 @@ export class FakeUploaderComponent extends DominusUploaderComponent {
             queuedDominusFile.progress = Math.floor(loaded / queuedDominusFile.size * 100);
             this.changeDetector.markForCheck();
         });
+
+        return new Promise(() => {}) as Promise<void>;
     }
 
    override removeFile(fileIndex: number) {
         this._value.splice(fileIndex, 1);
         this.hasFiles = this._value.length > 0;
         this.changeDetector.markForCheck();
+
+        return new Promise(() => {}) as Promise<void>;
     }
 }
