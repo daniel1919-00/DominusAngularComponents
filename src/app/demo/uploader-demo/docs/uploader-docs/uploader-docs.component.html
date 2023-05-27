@@ -9,12 +9,20 @@
             Request method used to call the the endpoint on file save
         </app-component-docs-section-item>
 
+        <app-component-docs-section-item label="fileSaveEndpointRequestHeaders">
+            Headers to be passed along the file save request. Can be an object of headers or a promise that returns the headers.
+        </app-component-docs-section-item>
+
         <app-component-docs-section-item label="fileDeleteEndpoint">
             Endpoint to be called when deleting a file or clearing all uploaded files if [multiple] = true
         </app-component-docs-section-item>
 
         <app-component-docs-section-item label="fileDeleteEndpointRequestMethod">
             Request method used to call the the endpoint on file delete
+        </app-component-docs-section-item>
+
+        <app-component-docs-section-item label="fileDeleteEndpointRequestHeaders">
+            Headers to be passed along the file delete request. Can be an object of headers or a promise that returns the headers.
         </app-component-docs-section-item>
 
         <app-component-docs-section-item label="multiple">
@@ -37,5 +45,21 @@
             Customize the look of the image preview. Must be an [ngStyle] compatible object.
         </app-component-docs-section-item>
 
+    </app-component-docs-section>
+
+    <app-component-docs-section label="Outputs">
+        <app-component-docs-section-item label="uploadFinished">
+            Event triggered when all the files in the upload queue are uploaded.
+        </app-component-docs-section-item>
+    </app-component-docs-section>
+
+    <app-component-docs-section label="Methods">
+        <app-component-docs-section-item label="openFilesInput">
+            Opens the file input dialog.
+        </app-component-docs-section-item>
+
+        <app-component-docs-section-item label="removeFile">
+            Removes an uploaded file by index
+        </app-component-docs-section-item>
     </app-component-docs-section>
 </app-component-docs>
