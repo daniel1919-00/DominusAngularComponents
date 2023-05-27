@@ -239,6 +239,10 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
                         break;
 
                     case HttpEventType.Response:
+                        if(!this.multiple)
+                        {
+                            this._value = [];
+                        }
                         this._value.push({
                             name: file.name,
                             size: file.size,
