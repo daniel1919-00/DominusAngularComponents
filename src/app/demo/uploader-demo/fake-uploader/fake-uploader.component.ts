@@ -4,13 +4,15 @@ import {DominusUploaderComponent} from "../../../dominus/dominus-uploader/dominu
 import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {HttpClientModule} from "@angular/common/http";
-import {MatProgressBarModule} from "@angular/material/progress-bar";
 import {
     DominusUploaderFileComponent
 } from "../../../dominus/dominus-uploader/components/dominus-uploader-file/dominus-uploader-file.component";
 import {MatFormFieldControl} from "@angular/material/form-field";
 import {DominusQueuedFile} from "../../../dominus/dominus-uploader/dominus-uploader";
 import {finalize, interval, take, takeUntil} from "rxjs";
+import {
+    DominusUploaderImageComponent
+} from "../../../dominus/dominus-uploader/components/dominus-uploader-image/dominus-uploader-image.component";
 
 @Component({
     standalone: true,
@@ -21,8 +23,8 @@ import {finalize, interval, take, takeUntil} from "rxjs";
         MatIconModule,
         CommonModule,
         HttpClientModule,
-        MatProgressBarModule,
-        DominusUploaderFileComponent
+        DominusUploaderFileComponent,
+        DominusUploaderImageComponent
     ],
     styleUrls: ['./../../../dominus/dominus-uploader/dominus-uploader.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +58,7 @@ export class FakeUploaderComponent extends DominusUploaderComponent {
             this._filesQueue.delete(queuedDominusFile.id);
             this.hasFiles = true;
             this.changeDetector.markForCheck();
+            this._onChange(this.value);
             if(this.isInAngularForm && !this._filesQueue.size)
             {
                 this.uploadFinished.next(this.value);
@@ -73,6 +76,7 @@ export class FakeUploaderComponent extends DominusUploaderComponent {
         this._value.splice(fileIndex, 1);
         this.hasFiles = this._value.length > 0;
         this.changeDetector.markForCheck();
+        this._onChange(this.value);
 
         return new Promise(() => {}) as Promise<void>;
     }

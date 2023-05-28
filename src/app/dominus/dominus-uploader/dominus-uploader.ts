@@ -26,7 +26,8 @@ export enum DominusUploaderIntl {
     ALLOWED_EXTENSIONS,
     MULTIPLE_NO_FILES_MESSAGE,
     MULTIPLE_ADD_FILES_BTN,
-    SINGLE_NO_FILES_MESSAGE
+    SINGLE_NO_FILES_MESSAGE,
+    NO_IMAGE_MESSAGE,
 }
 
 export const DOMINUS_UPLOADER_INTL = new InjectionToken<Record<DominusUploaderIntl, string>>('dominus uploader i18n strings');

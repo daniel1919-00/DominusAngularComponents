@@ -2,22 +2,92 @@
     <mat-tab-group animationDuration="0">
         <mat-tab label="Overview">
             <mat-card-content>
-                <form [formGroup]="form">
-                    <mat-form-field style="width:100%;">
-                        <mat-label>Uploader</mat-label>
-                        <app-fake-uploader
-                            [multiple]="true"
-                            formControlName="uploader"
-                            [allowedExtensions]="['txt', 'png']"
-                            fileSaveEndpoint="https://endpointurl/upload"
-                            fileDeleteEndpoint="https://endpointurl/delete">
-                        </app-fake-uploader>
-                    </mat-form-field>
-                </form>
-                <br><br>
+                <mat-tab-group animationDuration="0">
+                    <mat-tab label="Multiple files uploader">
+                        <br><br>
+                        <mat-card-subtitle>
+                            <h2>Multiple files uploader</h2>
+                        </mat-card-subtitle>
+                        <form [formGroup]="multipleFilesForm">
+                            <app-fake-uploader
+                                [multiple]="true"
+                                type="file-uploader"
+                                formControlName="uploaderValue"
+                                [allowedExtensions]="['txt', 'png']"
+                                fileSaveEndpoint="https://endpointurl/upload"
+                                fileDeleteEndpoint="https://endpointurl/delete">
+                            </app-fake-uploader>
+                        </form>
+                        <br><br>
 
-                Uploader value:
-                <pre>{{ form.value | json }}</pre>
+                        Uploader value:
+                        <pre>{{ multipleFilesForm.value | json }}</pre>
+                    </mat-tab>
+
+                    <mat-tab label="Single files uploader">
+                        <br><br>
+                        <mat-card-subtitle>
+                            <h2>Single files uploader</h2>
+                        </mat-card-subtitle>
+                        <form [formGroup]="singleFilesForm">
+                            <app-fake-uploader
+                                [multiple]="false"
+                                type="file-uploader"
+                                formControlName="uploaderValue"
+                                [allowedExtensions]="['txt', 'png']"
+                                fileSaveEndpoint="https://endpointurl/upload"
+                                fileDeleteEndpoint="https://endpointurl/delete">
+                            </app-fake-uploader>
+                        </form>
+                        <br><br>
+
+                        Uploader value:
+                        <pre>{{ singleFilesForm.value | json }}</pre>
+                    </mat-tab>
+
+                    <mat-tab label="Multiple image uploader">
+                        <br><br>
+                        <mat-card-subtitle>
+                            <h2>Multiple image uploader</h2>
+                        </mat-card-subtitle>
+                        <form [formGroup]="multipleImageUploaderForm">
+                            <app-fake-uploader
+                                [multiple]="true"
+                                type="image-uploader"
+                                formControlName="uploaderValue"
+                                [allowedExtensions]="['png', 'jpg', 'gif']"
+                                fileSaveEndpoint="https://endpointurl/upload"
+                                fileDeleteEndpoint="https://endpointurl/delete">
+                            </app-fake-uploader>
+                        </form>
+                        <br><br>
+
+                        Uploader value:
+                        <pre>{{ multipleImageUploaderForm.value | json }}</pre>
+                    </mat-tab>
+
+                    <mat-tab label="Single image uploader">
+                        <br><br>
+                        <mat-card-subtitle>
+                            <h2>Single image uploader</h2>
+                        </mat-card-subtitle>
+                        <form [formGroup]="singleImageUploaderForm">
+                            <app-fake-uploader
+                                [multiple]="false"
+                                type="image-uploader"
+                                formControlName="uploaderValue"
+                                [allowedExtensions]="['png', 'jpg', 'gif']"
+                                [allowDeleteAction]="false"
+                                fileSaveEndpoint="https://endpointurl/upload"
+                                fileDeleteEndpoint="https://endpointurl/delete">
+                            </app-fake-uploader>
+                        </form>
+                        <br><br>
+
+                        Uploader value:
+                        <pre>{{ singleImageUploaderForm.value | json }}</pre>
+                    </mat-tab>
+                </mat-tab-group>
 
                 <br><br>
                 <p>Override colors using the following css vars:</p>

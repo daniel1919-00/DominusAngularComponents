@@ -14,11 +14,12 @@ import {MatIconModule} from "@angular/material/icon";
 import {CommonModule} from "@angular/common";
 import {HttpClient, HttpClientModule, HttpEventType, HttpHeaders} from "@angular/common/http";
 import {catchError, fromEvent, of, Subject, takeUntil} from "rxjs";
-import {MatProgressBarModule} from "@angular/material/progress-bar";
 import {ControlValueAccessor, NgControl} from "@angular/forms";
 import {DominusUploaderFileComponent} from "./components/dominus-uploader-file/dominus-uploader-file.component";
 import {coerceBooleanProperty} from "@angular/cdk/coercion";
 import {MAT_FORM_FIELD, MatFormField, MatFormFieldControl} from "@angular/material/form-field";
+import {ThemePalette} from "@angular/material/core";
+import {DominusUploaderImageComponent} from "./components/dominus-uploader-image/dominus-uploader-image.component";
 
 @Component({
     standalone: true,
@@ -29,8 +30,8 @@ import {MAT_FORM_FIELD, MatFormField, MatFormFieldControl} from "@angular/materi
         MatIconModule,
         CommonModule,
         HttpClientModule,
-        MatProgressBarModule,
-        DominusUploaderFileComponent
+        DominusUploaderFileComponent,
+        DominusUploaderImageComponent
     ],
     styleUrls: ['./dominus-uploader.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +68,13 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
     @Input() multiple = false;
 
     /**
+     * Uploader type
+     */
+    @Input() type: 'file-uploader' | 'image-uploader' = 'file-uploader';
+
+    @Input() progressBarColor: ThemePalette = 'primary';
+
+    /**
      * A list of allowed file extensions(lowercase), if empty the extension check is skipped.
      * Example: ['txt', 'xlsx', ...]
      */
@@ -77,15 +85,19 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
      */
     @Input() maxFileSize = 5 * 1024 * 1024;
 
+    @Input() allowDeleteAction = true;
+
     /**
-     * Whether to show a preview if the uploaded file is an image
+     * Whether to show a preview when the uploaded file is an image.
+     * Does not apply image-uploader type
      */
     @Input() showImagePreview = true;
 
     /**
+     * Styles applied directly to the image preview img element
      * [ngStyle] compatible object
      */
-    @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '100px'};
+    @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '200px'};
 
     /**
      * Event triggered when all the files in the upload queue are uploaded.
@@ -102,13 +114,15 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         'container': true,
         'multiple': false,
         'mat-form-field': false,
-        'dragover': false
+        'dragover': false,
+        'image-uploader': false
     };
     _value: DominusFile[] = [];
     _lastFileId = 0;
     _filesQueue  = new Map<number, DominusQueuedFile>();
     _disabled: boolean = false;
     _required: boolean = false;
+    _uploaderType: string = '';
 
 
     protected _onChange = (files: DominusFile[]) => files;
@@ -141,6 +155,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
             [DominusUploaderIntl.SINGLE_NO_FILES_MESSAGE]: 'No file',
             [DominusUploaderIntl.ALLOWED_EXTENSIONS]: 'Allowed Extensions',
             [DominusUploaderIntl.MULTIPLE_ADD_FILES_BTN]: 'Add files',
+            [DominusUploaderIntl.NO_IMAGE_MESSAGE]: 'Drag your image over this box',
         };
 
         if (intl) {
@@ -157,7 +172,9 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
             throw new Error('Dominus uploader: Please set the [fileSaveEndpoint] @Input()!');
         }
 
+        this._uploaderType = this.type + (this.multiple ? '-multiple' : '-single');
         this._containerClasses['multiple'] = this.multiple;
+        this._containerClasses['image-uploader'] = this.type === 'image-uploader';
     }
 
     ngAfterViewInit() {
@@ -209,6 +226,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
                 size: file.size,
                 error: error,
                 canRetryUpload: error === '',
+                imagePreviewUrl: file.type.includes('image') ? URL.createObjectURL(file) : '',
                 file: file
             };
 
@@ -263,10 +281,10 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
                             data: event.body || {}
                         });
 
-                        this._onChange(this.value);
                         this._filesQueue.delete(queuedDominusFile.id);
                         this.hasFiles = true;
                         this.changeDetector.markForCheck();
+                        this._onChange(this.value);
                         this.uploadFinished.next(this.value);
                         break;
                 }
@@ -397,10 +415,11 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         {
             evt.preventDefault();
             evt.stopPropagation();
-            this._containerClasses['dragover'] = false;
-            this.changeDetector.markForCheck();
             this._onFiles(files);
         }
+
+        this._containerClasses['dragover'] = false;
+        this.changeDetector.markForCheck();
     }
 
     private checkFile(file: File): string {

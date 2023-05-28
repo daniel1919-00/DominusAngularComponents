@@ -7,11 +7,12 @@ import {ReactiveFormsModule, UntypedFormBuilder, UntypedFormGroup} from "@angula
 import {UploaderDocsComponent} from "./docs/uploader-docs/uploader-docs.component";
 import {FakeUploaderComponent} from "./fake-uploader/fake-uploader.component";
 import {MatInputModule} from "@angular/material/input";
+import {MatDividerModule} from "@angular/material/divider";
 
 @Component({
     selector: 'app-uploader-demo',
     standalone: true,
-    imports: [CommonModule, MatCardModule, MatTabsModule, ReactiveFormsModule, UploaderDocsComponent, FakeUploaderComponent, MatInputModule],
+    imports: [CommonModule, MatCardModule, MatTabsModule, ReactiveFormsModule, UploaderDocsComponent, FakeUploaderComponent, MatInputModule, MatDividerModule],
     templateUrl: './uploader-demo.component.html',
     styleUrls: ['./uploader-demo.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,14 +24,30 @@ import {MatInputModule} from "@angular/material/input";
     }]
 })
 export class UploaderDemoComponent {
-    form: UntypedFormGroup;
+    multipleFilesForm: UntypedFormGroup;
+    singleFilesForm: UntypedFormGroup;
+    singleImageUploaderForm: UntypedFormGroup;
+    multipleImageUploaderForm: UntypedFormGroup;
 
     constructor(
         private fb: UntypedFormBuilder
     )
     {
-        this.form = fb.group({
-            uploader: [[]]
+        this.multipleFilesForm = fb.group({
+            uploaderValue: [[]],
         });
+
+        this.singleFilesForm = fb.group({
+            uploaderValue: [[]],
+        });
+
+        this.multipleImageUploaderForm = fb.group({
+            uploaderValue: [[]],
+        });
+
+        this.singleImageUploaderForm = fb.group({
+            uploaderValue: [[]],
+        });
+
     }
 }

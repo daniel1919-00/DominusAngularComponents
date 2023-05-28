@@ -29,8 +29,16 @@
             Allows multiple file uploads
         </app-component-docs-section-item>
 
+        <app-component-docs-section-item label="progressBarColor">
+            Customizes the upload progress bar color
+        </app-component-docs-section-item>
+
         <app-component-docs-section-item label="allowedExtensions">
             A list of allowed file extensions(lowercase), if empty the extension check is skipped.
+        </app-component-docs-section-item>
+
+        <app-component-docs-section-item label="allowDeleteAction">
+            Shows or hides the file/image delete action.
         </app-component-docs-section-item>
 
         <app-component-docs-section-item label="maxFileSize">
@@ -42,7 +50,9 @@
         </app-component-docs-section-item>
 
         <app-component-docs-section-item label="imagePreviewStyles">
-            Customize the look of the image preview. Must be an [ngStyle] compatible object.
+            Customize the look of the image preview.
+            Styles applied directly to the image preview img element.
+            Must be an [ngStyle] compatible object.
         </app-component-docs-section-item>
 
     </app-component-docs-section>

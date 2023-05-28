@@ -4,9 +4,10 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {MatProgressBarModule} from "@angular/material/progress-bar";
 import {DominusFile, DominusQueuedFile} from "../../dominus-uploader";
+import {ThemePalette} from "@angular/material/core";
 
 @Component({
-    selector: 'app-dominus-uploader-file',
+    selector: 'dominus-uploader-file',
     standalone: true,
     imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressBarModule],
     templateUrl: './dominus-uploader-file.component.html',
@@ -19,6 +20,9 @@ export class DominusUploaderFileComponent {
     @Input() imagePreviewStyles!: {[style: string]: string};
     @Input() error: string | undefined;
     @Input() uploadProgress: number | undefined;
+    @Input() progressBarColor: ThemePalette = 'primary';
+    @Input() allowDeleteAction?: boolean;
+    @Input() showImagePreview?: boolean;
 
     @Output() fileDelete = new EventEmitter<number>();
     @Output() fileRetry = new EventEmitter<number>();

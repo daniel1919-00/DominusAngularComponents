@@ -8,15 +8,17 @@ input[type="file"] {
     min-height: 100px;
     padding: 10px;
 
-    &.multiple:not(.mat-form-field) {
+    &.multiple:not(.mat-form-field),
+    &.image-uploader:not(.mat-form-field) {
         border: 1px dotted var(--dominus-uploader-file-default-border-color, #cecece);
         &.dragover {
             border-color: var(--dominus-uploader-file-hover-border-color, #6495EDFF);
         }
     }
 
-    &.mat-form-field {
-        width: 100%;
+    .image-previews {
+        display: flex;
+        flex-wrap: wrap;
     }
 
     .no-files-multiple {
