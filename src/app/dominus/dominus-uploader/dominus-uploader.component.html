@@ -37,8 +37,9 @@
                 <div class="no-files-multiple">
                     <h3>{{ intl[DominusUploaderIntl.MULTIPLE_NO_FILES_MESSAGE] }}</h3>
                     <span *ngIf="allowedExtensions.length" class="allowed-extensions">
-                    <span>{{intl[DominusUploaderIntl.ALLOWED_EXTENSIONS]}}:</span> {{ allowedExtensions.join(', ') }}
-                </span>
+                        <span>{{intl[DominusUploaderIntl.ALLOWED_EXTENSIONS]}}</span> {{ allowedExtensions.join(', ') }}
+                    </span>
+                    <span *ngIf="maxImageSizeText">{{ intl[DominusUploaderIntl.IMAGE_SIZE_CHECK_TEXT] }} {{ maxImageSizeText }}</span>
                 </div>
             </ng-template>
         </ng-container>
@@ -106,8 +107,9 @@
             <div class="no-files-multiple">
                 <h3>{{ intl[DominusUploaderIntl.NO_IMAGE_MESSAGE] }}</h3>
                 <span *ngIf="allowedExtensions.length" class="allowed-extensions">
-                    <span>{{intl[DominusUploaderIntl.ALLOWED_EXTENSIONS]}}:</span> {{ allowedExtensions.join(', ') }}
+                    <span>{{intl[DominusUploaderIntl.ALLOWED_EXTENSIONS]}}</span> {{ allowedExtensions.join(', ') }}
                 </span>
+                <span *ngIf="maxImageSizeText">{{ intl[DominusUploaderIntl.IMAGE_SIZE_CHECK_TEXT] }} {{ maxImageSizeText }}</span>
             </div>
         </ng-template>
     </ng-container>

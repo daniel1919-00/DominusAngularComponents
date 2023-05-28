@@ -9,7 +9,13 @@ import {
     Optional, Output, Self, ViewChild,
 } from '@angular/core';
 import {MatButtonModule} from "@angular/material/button";
-import {DOMINUS_UPLOADER_INTL, DominusFile, DominusQueuedFile, DominusUploaderIntl} from "./dominus-uploader";
+import {
+    DOMINUS_UPLOADER_INTL,
+    DominusFile,
+    DominusImageSize,
+    DominusQueuedFile,
+    DominusUploaderIntl
+} from "./dominus-uploader";
 import {MatIconModule} from "@angular/material/icon";
 import {CommonModule} from "@angular/common";
 import {HttpClient, HttpClientModule, HttpEventType, HttpHeaders} from "@angular/common/http";
@@ -100,6 +106,13 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
     @Input() imagePreviewStyles: {[style: string]: string} = {'max-width': '200px'};
 
     /**
+     * Limits the maximum width and/or height of uploaded images.
+     * Multiple sizes can be added in the array, for example you can
+     * check if the uploaded image has a width of 100 by passing [maxImageSize]="[{width: 100}]"
+     */
+    @Input() maxImageSize?: DominusImageSize[];
+
+    /**
      * Event triggered when all the files in the upload queue are uploaded.
      */
     @Output() uploadFinished = new EventEmitter<DominusFile[]>();
@@ -123,6 +136,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
     _disabled: boolean = false;
     _required: boolean = false;
     _uploaderType: string = '';
+    maxImageSizeText: string = '';
 
 
     protected _onChange = (files: DominusFile[]) => files;
@@ -151,11 +165,13 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
             [DominusUploaderIntl.UNKNOWN_ERROR]: 'Upload Failed!',
             [DominusUploaderIntl.INVALID_EXTENSION]: 'Invalid file extension!',
             [DominusUploaderIntl.MAX_SIZE_EXCEEDED]: 'File size is too big!',
-            [DominusUploaderIntl.MULTIPLE_NO_FILES_MESSAGE]: 'Drop files here!',
+            [DominusUploaderIntl.MULTIPLE_NO_FILES_MESSAGE]: 'Drop files here.',
             [DominusUploaderIntl.SINGLE_NO_FILES_MESSAGE]: 'No file',
-            [DominusUploaderIntl.ALLOWED_EXTENSIONS]: 'Allowed Extensions',
+            [DominusUploaderIntl.ALLOWED_EXTENSIONS]: 'Allowed Extensions:',
             [DominusUploaderIntl.MULTIPLE_ADD_FILES_BTN]: 'Add files',
-            [DominusUploaderIntl.NO_IMAGE_MESSAGE]: 'Drag your image over this box',
+            [DominusUploaderIntl.NO_IMAGE_MESSAGE]: 'Drop images here.',
+            [DominusUploaderIntl.IMAGE_SIZE_CHECK_FAILED]: 'Maximum width or height exceeded.',
+            [DominusUploaderIntl.IMAGE_SIZE_CHECK_TEXT]: 'Allowed image dimensions (HxW):',
         };
 
         if (intl) {
@@ -175,6 +191,11 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this._uploaderType = this.type + (this.multiple ? '-multiple' : '-single');
         this._containerClasses['multiple'] = this.multiple;
         this._containerClasses['image-uploader'] = this.type === 'image-uploader';
+
+        if(this.maxImageSize?.length) {
+            this.maxImageSizeText = this.maxImageSize.map(size => size.height + 'x' + size.width).join(', ');
+            console.log(this.maxImageSizeText);
+        }
     }
 
     ngAfterViewInit() {
@@ -208,7 +229,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this.stateChanges.next();
     }
 
-    _onFiles(addedFiles: FileList) {
+    async _onFiles(addedFiles: FileList) {
         if (!(addedFiles && addedFiles.length)) {
             return;
         }
@@ -217,7 +238,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
 
         for (let i = files.length; i--;) {
             const file: File = files[i];
-            const error = this.checkFile(file);
+            const error = await this.checkFile(file);
 
             const queuedDominusFile: DominusQueuedFile = {
                 id: ++this._lastFileId,
@@ -234,6 +255,9 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
 
             if (error === '') {
                 this._uploadFile(queuedDominusFile);
+            }
+            else {
+                this.changeDetector.markForCheck();
             }
         }
 
@@ -422,7 +446,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
         this.changeDetector.markForCheck();
     }
 
-    private checkFile(file: File): string {
+    private async checkFile(file: File): Promise<string> {
         const allowedExtensions = this.allowedExtensions;
 
         if (allowedExtensions.length) {
@@ -445,8 +469,62 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
             return this.intl[DominusUploaderIntl.MAX_SIZE_EXCEEDED];
         }
 
+        if(file.type.includes('image') && this.maxImageSize?.length) {
+            const maxImageSize = this.maxImageSize;
+            const imageSizes = await this.getImageSize(URL.createObjectURL(file));
+            let checkFail = true;
+            for(let i = maxImageSize.length; i--;)
+            {
+                const sizeCheck = maxImageSize[i];
+
+                if(
+                    (sizeCheck.width !== undefined && sizeCheck.height !== undefined)
+                    && sizeCheck.width === imageSizes.width
+                    && sizeCheck.height === imageSizes.height
+                ) {
+                    checkFail = false;
+                    break;
+                }
+                else if(sizeCheck.width !== undefined && sizeCheck.height === undefined && sizeCheck.width === imageSizes.width)
+                {
+                    checkFail = false;
+                    break;
+                }
+                else if(sizeCheck.height !== undefined && sizeCheck.width === undefined && sizeCheck.height === imageSizes.height)
+                {
+                    checkFail = false;
+                    break;
+                }
+            }
+
+            if(checkFail) {
+                return this.intl[DominusUploaderIntl.IMAGE_SIZE_CHECK_FAILED];
+            }
+        }
+
         return '';
     }
+
+
+    private async getImageSize(url: string): Promise<{width: number; height: number;}> {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+
+            img.onload = () => {
+                resolve({
+                    width: img.width,
+                    height: img.height
+                });
+            };
+
+            img.onerror = () => {
+                reject('Error loading image');
+            };
+
+            img.src = url;
+        });
+    }
+
 
     ngOnDestroy(){
         this.componentDestroyed$.next();

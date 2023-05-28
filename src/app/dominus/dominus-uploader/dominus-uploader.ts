@@ -28,6 +28,12 @@ export enum DominusUploaderIntl {
     MULTIPLE_ADD_FILES_BTN,
     SINGLE_NO_FILES_MESSAGE,
     NO_IMAGE_MESSAGE,
+    IMAGE_SIZE_CHECK_FAILED,
+    IMAGE_SIZE_CHECK_TEXT
 }
 
 export const DOMINUS_UPLOADER_INTL = new InjectionToken<Record<DominusUploaderIntl, string>>('dominus uploader i18n strings');
+export interface DominusImageSize {
+    width?: number;
+    height?: number;
+}
