@@ -88,18 +88,22 @@
                         <pre>{{ singleImageUploaderForm.value | json }}</pre>
                     </mat-tab>
                 </mat-tab-group>
-
-                <br><br>
-                <p>Override colors using the following css vars:</p>
-                <ul>
-                    <li>--dominus-uploader-error-color: Error text color</li>
-                    <li>--dominus-uploader-file-hover-border-color: Border color when hovering over with a file</li>
-                </ul>
             </mat-card-content>
         </mat-tab>
         <mat-tab label="Api">
             <mat-card-content>
                 <app-uploader-docs></app-uploader-docs>
+            </mat-card-content>
+        </mat-tab>
+        <mat-tab label="Styling">
+            <mat-card-content>
+                <p>Override colors using the following css vars:</p>
+                <ul>
+                    <li>--dominus-uploader-error-color: Error text color</li>
+                    <li>--dominus-uploader-file-hover-border-color: Border color when hovering over with a file</li>
+                    <li>--dominus-uploader-image-uploading-overlay: Overlay color applied to images that are uploading</li>
+                    <li>--dominus-uploader-image-error-container-background: Background colo applied to the error container</li>
+                </ul>
             </mat-card-content>
         </mat-tab>
     </mat-tab-group>

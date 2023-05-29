@@ -1,6 +1,20 @@
 <app-component-docs>
     <app-component-docs-section label="Inputs">
 
+        <app-component-docs-section-item label="value">
+            The current value. Must be an array of DominusFile objects.
+
+            <pre>
+export interface DominusFile {{'{'}}
+    name: string; // Displayed file name
+    size?: number;
+    type?: string;
+    imagePreviewUrl?: string; // will be used to generate a preview
+    data?: {{'{'}} [key: string]: any {{'}'}};
+{{'}'}}
+            </pre>
+        </app-component-docs-section-item>
+
         <app-component-docs-section-item label="fileSaveEndpoint">
             Endpoint url that will handle storing the file
         </app-component-docs-section-item>
@@ -76,6 +90,27 @@
 
         <app-component-docs-section-item label="removeFile">
             Removes an uploaded file by index
+        </app-component-docs-section-item>
+    </app-component-docs-section>
+
+    <app-component-docs-section label="Intl">
+        <app-component-docs-section-item label="openFilesInput">
+            Internationalization can be achieved by using the <strong>DOMINUS_UPLOADER_INTL</strong> injection token, and passing an object of strings using the <strong>DominusUploaderIntl</strong> members as keys.
+            <pre>
+@Component({{'{'}}
+    ...
+    providers: [{{'{'}}
+        provide: DOMINUS_UPLOADER_INTL,
+        useValue: {{'{'}}
+                [DominusUploaderIntl.UNKNOWN_ERROR]: 'Upload Failed'
+                ...
+        {{'}'}}
+    {{'}'}}]
+{{'}'}})
+export class UploaderDemoComponent {{'{'}}
+    ...
+{{'}'}}
+            </pre>
         </app-component-docs-section-item>
     </app-component-docs-section>
 </app-component-docs>
