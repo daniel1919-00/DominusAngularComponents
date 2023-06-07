@@ -20,7 +20,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "app",
+      "prefix": "dominus",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",

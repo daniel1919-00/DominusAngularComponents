@@ -226,6 +226,7 @@ export class DominusUploaderComponent implements OnInit, OnDestroy, AfterViewIni
 
         this._value = value;
         this.hasFiles = this._value.length > 0;
+        this.changeDetector.markForCheck();
         this.stateChanges.next();
     }
 
